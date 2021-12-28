@@ -20,7 +20,11 @@ public class WriteUtil {
     // 按指定模式在字符串查找
     static final String pattern = "(.*)(\\.js|\\.css)+?(\\s*\")(.*)";
     // 创建 Pattern 对象
-    static Pattern p = Pattern.compile(pattern);
+    static Pattern HTML_PATTERN = Pattern.compile(pattern);
+    // 按指定模式在字符串查找
+    static final String JS_HTML = "(.*)(\\.html)(\\s*)([^\\(])";
+    // 创建 Pattern 对象
+    static Pattern JS_PATTERN = Pattern.compile(JS_HTML);
 
     public static void copyFiles(String oldPath, String newPath, List<FileVo> files, String version) {
         File newDir = new File(newPath);
@@ -48,19 +52,19 @@ public class WriteUtil {
             String oldFile = path + File.separator + fileVo.getName();
             path = path.replace(oldPath, newPath);
             String newFile = path + File.separator + fileVo.getName();
-            if(fileVo.isDealFile()){
+            if (fileVo.isDealFile()) {
                 addVersion(oldFile, newFile, version);
                 return;
             }
-            try(BufferedInputStream in = new BufferedInputStream(new FileInputStream(oldFile));
-                BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(newFile))){
+            try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(oldFile));
+                 BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(newFile))) {
                 byte[] bs = new byte[1024];
                 int l = -1;
-                while ((l = in.read(bs)) != -1){
+                while ((l = in.read(bs)) != -1) {
                     out.write(bs, 0, l);
                 }
                 out.flush();
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("复制文件异常！");
                 System.exit(1);
@@ -68,39 +72,56 @@ public class WriteUtil {
         });
     }
 
-    static void addVersion(String sourceFile, String targerFile, String version){
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sourceFile),"UTF-8"));
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(targerFile),"UTF-8"))){
+    static void addVersion(String sourceFile, String targerFile, String version) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sourceFile), "UTF-8"));
+             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(targerFile), "UTF-8"))) {
             String str = null;
-            while ((str = reader.readLine()) != null){
-                if(StringUtils.isBlank(str)){
+            while ((str = reader.readLine()) != null) {
+                if (StringUtils.isBlank(str)) {
                     continue;
                 }
-                Matcher matcher = p.matcher(str);
-                if(matcher.find()){
-                    StringBuffer sb = new StringBuffer(matcher.group(1));
-                    sb.append(matcher.group(2))
-                            .append("?v=" + version)
-                            .append("\"")
-                            .append(matcher.group(4));
-                    str = sb.toString();
+                if(sourceFile.endsWith(".html")){
+                    Matcher matcher = HTML_PATTERN.matcher(str);
+                    if (matcher.find()) {
+                        StringBuffer sb = new StringBuffer(matcher.group(1));
+                        sb.append(matcher.group(2))
+                                .append("?v=" + version)
+                                .append("\"")
+                                .append(matcher.group(4));
+                        str = sb.toString();
+
+                    }
+                } else if(sourceFile.endsWith(".js")){
+                    Matcher matcher = JS_PATTERN.matcher(str);
+                    if (matcher.find()) {
+                        StringBuffer sb = new StringBuffer(matcher.group(1));
+                        sb.append(matcher.group(2));
+                        String queryStr = matcher.group(4);
+                        if(queryStr.contains("?")){
+                            queryStr = queryStr.replace("?", "?v="+ version + "&");
+                        } else {
+                            queryStr = queryStr + "?v=" + version;
+                        }
+                        sb.append(queryStr);
+                        str = sb.toString();
+                    }
                 }
                 writer.write(str);
                 writer.newLine();
             }
-        } catch (Exception ex){
+        } catch (Exception ex) {
+            ex.printStackTrace();
             System.out.println("复制文件异常！");
             System.exit(1);
         }
     }
 
     /**
-     *
-     * @param zipFile zip文件名
+     * @param zipFile   zip文件名
      * @param zipSource 待压缩文件
-     * @param unzipDir 解压文件根目录
+     * @param unzipDir  解压文件根目录
      */
-    public static void zipFiles(String zipFile, String zipSource, String unzipDir){
+    public static void zipFiles(String zipFile, String zipSource, String unzipDir) {
         ZipOutputStream zipOut = null;
         try {
             zipOut = new ZipOutputStream(new FileOutputStream(zipFile));
@@ -117,13 +138,13 @@ public class WriteUtil {
         }
     }
 
-    private static void zip(ZipOutputStream zipOut, File f, String path){
-        if(f.isDirectory()){
+    private static void zip(ZipOutputStream zipOut, File f, String path) {
+        if (f.isDirectory()) {
             try {
                 //根目录创建
                 zipOut.putNextEntry(new ZipEntry(path + File.separator));
                 File[] files = f.listFiles();
-                for(File childFile : files){
+                for (File childFile : files) {
                     zip(zipOut, childFile.getAbsoluteFile(), path + File.separator + childFile.getName());
                 }
             } catch (IOException e) {
@@ -137,13 +158,13 @@ public class WriteUtil {
                 System.out.println("压缩文件异常！");
                 System.exit(1);
             }
-            try(BufferedInputStream in = new BufferedInputStream(new FileInputStream(f))){
+            try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(f))) {
                 byte[] bs = new byte[1024];
                 int l = -1;
-                while ((l = in.read(bs)) != -1){
+                while ((l = in.read(bs)) != -1) {
                     zipOut.write(bs, 0, l);
                 }
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("压缩文件异常！");
                 System.exit(1);

@@ -1,5 +1,6 @@
 package util;
 
+import org.apache.commons.lang3.StringUtils;
 import vo.FileVo;
 
 import java.io.File;
@@ -16,6 +17,16 @@ public class PathUtil {
 
     static String ignorePath = PropertiesUtil.properties.getProperty("ignore_path");
 
+    static String[] jsAddVersions = new String[]{};
+
+    static {
+        String jsAddVersion = PropertiesUtil.properties.getProperty("js_add_version");
+        jsAddVersion = jsAddVersion.replace("/", File.separator);
+        if (StringUtils.isNotBlank(jsAddVersion)) {
+            jsAddVersions = jsAddVersion.split("\\|");
+        }
+    }
+
     public static List<FileVo> listFiles(String path) {
         File webPath = new File(path);
         if (webPath.isFile()) {
@@ -25,10 +36,19 @@ public class PathUtil {
             fileVo.setFile(true);
             if (webPath.getName().endsWith(".html")) {
                 fileVo.setDealFile(true);
+            } else if (webPath.getName().endsWith(".js")){
+                    String filePath = fileVo.getPath();
+                    for (String s : jsAddVersions) {
+                        if (filePath.contains(s)) {
+                            fileVo.setDealFile(true);
+                            break;
+                        }
+                    }
             }
             return Collections.singletonList(fileVo);
         }
         String[] paths = webPath.list(new FilenameFilter() {
+            @Override
             public boolean accept(File dir, String name) {
                 if (name.matches(ignorePath)) {
                     System.out.println("忽略文件：" + name);
@@ -50,6 +70,14 @@ public class PathUtil {
                 fileVo.setFile(true);
                 if (name.endsWith(".html")) {
                     fileVo.setDealFile(true);
+                } else if (name.endsWith(".js")) {
+                    String filePath = fileVo.getPath();
+                    for (String s : jsAddVersions) {
+                        if (filePath.contains(s)) {
+                            fileVo.setDealFile(true);
+                            break;
+                        }
+                    }
                 }
             } else {
                 fileVos.addAll(listFiles(childerFile));
@@ -58,14 +86,14 @@ public class PathUtil {
         return fileVos;
     }
 
-    public static void deleteForCmd(String path){
+    public static void deleteForCmd(String path) {
         String delCmd = "cmd /C RD /S /Q " + path;
-        System.out.println("删除文件:"+delCmd);
+        System.out.println("删除文件:" + delCmd);
         try {
             Process p = Runtime.getRuntime().exec(delCmd);
             p.waitFor();
         } catch (Exception e) {
-            System.out.println("删除文件失败:"+path);
+            System.out.println("删除文件失败:" + path);
             e.printStackTrace();
         }
     }
