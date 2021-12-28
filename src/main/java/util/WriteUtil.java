@@ -22,7 +22,7 @@ public class WriteUtil {
     // 创建 Pattern 对象
     static Pattern HTML_PATTERN = Pattern.compile(pattern);
     // 按指定模式在字符串查找
-    static final String JS_HTML = "(.*)(\\.html)(\\s*)([^\\(])";
+    static final String JS_HTML = "(.*)(\\.html)(\\s*)([^(]*)$";
     // 创建 Pattern 对象
     static Pattern JS_PATTERN = Pattern.compile(JS_HTML);
 
@@ -73,14 +73,18 @@ public class WriteUtil {
     }
 
     static void addVersion(String sourceFile, String targerFile, String version) {
+        System.out.println("处理文件：" + sourceFile);
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(sourceFile), "UTF-8"));
              BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(targerFile), "UTF-8"))) {
             String str = null;
             while ((str = reader.readLine()) != null) {
+                str = str.trim();
                 if (StringUtils.isBlank(str)) {
                     continue;
                 }
+
                 if(sourceFile.endsWith(".html")){
+
                     Matcher matcher = HTML_PATTERN.matcher(str);
                     if (matcher.find()) {
                         StringBuffer sb = new StringBuffer(matcher.group(1));
@@ -92,18 +96,8 @@ public class WriteUtil {
 
                     }
                 } else if(sourceFile.endsWith(".js")){
-                    Matcher matcher = JS_PATTERN.matcher(str);
-                    if (matcher.find()) {
-                        StringBuffer sb = new StringBuffer(matcher.group(1));
-                        sb.append(matcher.group(2));
-                        String queryStr = matcher.group(4);
-                        if(queryStr.contains("?")){
-                            queryStr = queryStr.replace("?", "?v="+ version + "&");
-                        } else {
-                            queryStr = queryStr + "?v=" + version;
-                        }
-                        sb.append(queryStr);
-                        str = sb.toString();
+                    if(!str.startsWith("//")){
+                        str = addJsHtmlVersion(str, version);
                     }
                 }
                 writer.write(str);
@@ -114,6 +108,23 @@ public class WriteUtil {
             System.out.println("复制文件异常！");
             System.exit(1);
         }
+    }
+
+    private static String addJsHtmlVersion(String line, String version){
+        Matcher matcher = JS_PATTERN.matcher(line);
+        if (matcher.find()) {
+            StringBuffer sb = new StringBuffer(matcher.group(1));
+            sb.append(matcher.group(2));
+            String queryStr = matcher.group(4);
+            if(queryStr.contains("?")){
+                queryStr = queryStr.replace("?", "?v="+ version + "&");
+            } else {
+                queryStr =  "?v=" + version + queryStr;
+            }
+            sb.append(queryStr);
+            line = sb.toString();
+        }
+        return line;
     }
 
     /**

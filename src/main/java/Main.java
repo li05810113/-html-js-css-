@@ -15,7 +15,7 @@ public class Main {
     public static void main(String[] args) {
         PropertiesUtil.properties.list(System.out);
         String basePath = PropertiesUtil.properties.getProperty("base_path");
-        basePath = "F:\\project\\hsv2_web";
+//        basePath = "F:\\project\\hsv2_web";
         String path = basePath;
         path = path.replace("/", File.separator);
         File webPath = new File(path);
