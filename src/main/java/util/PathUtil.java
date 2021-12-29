@@ -16,8 +16,9 @@ import java.util.List;
 public class PathUtil {
 
     static String ignorePath = PropertiesUtil.properties.getProperty("ignore_path");
-
     static String[] jsAddVersions = new String[]{};
+    static String js_no_version = PropertiesUtil.properties.getProperty("js_no_version");
+    ;
 
     static {
         String jsAddVersion = PropertiesUtil.properties.getProperty("js_add_version");
@@ -36,14 +37,19 @@ public class PathUtil {
             fileVo.setFile(true);
             if (webPath.getName().endsWith(".html")) {
                 fileVo.setDealFile(true);
-            } else if (webPath.getName().endsWith(".js")){
-                    String filePath = fileVo.getPath();
-                    for (String s : jsAddVersions) {
-                        if (filePath.contains(s)) {
-                            fileVo.setDealFile(true);
-                            break;
-                        }
+            } else if (webPath.getName().endsWith(".js")) {
+                if (StringUtils.isNotBlank(js_no_version)) {
+                    if (js_no_version.contains(fileVo.getName())) {
+                        return Collections.singletonList(fileVo);
                     }
+                }
+                String filePath = fileVo.getPath();
+                for (String s : jsAddVersions) {
+                    if (filePath.contains(s)) {
+                        fileVo.setDealFile(true);
+                        break;
+                    }
+                }
             }
             return Collections.singletonList(fileVo);
         }
@@ -71,13 +77,22 @@ public class PathUtil {
                 if (name.endsWith(".html")) {
                     fileVo.setDealFile(true);
                 } else if (name.endsWith(".js")) {
-                    String filePath = fileVo.getPath();
-                    for (String s : jsAddVersions) {
-                        if (filePath.contains(s)) {
-                            fileVo.setDealFile(true);
-                            break;
+                    boolean isAddVersion = true;
+                    if (StringUtils.isNotBlank(js_no_version)) {
+                        if (js_no_version.contains(webPath.getName())) {
+                            isAddVersion = false;
                         }
                     }
+                    if(isAddVersion){
+                        String filePath = fileVo.getPath();
+                        for (String s : jsAddVersions) {
+                            if (filePath.contains(s)) {
+                                fileVo.setDealFile(true);
+                                break;
+                            }
+                        }
+                    }
+
                 }
             } else {
                 fileVos.addAll(listFiles(childerFile));

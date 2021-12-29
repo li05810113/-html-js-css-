@@ -111,6 +111,9 @@ public class WriteUtil {
     }
 
     private static String addJsHtmlVersion(String line, String version){
+        if(!line.contains("/")){
+            return line;
+        }
         Matcher matcher = JS_PATTERN.matcher(line);
         if (matcher.find()) {
             StringBuffer sb = new StringBuffer(matcher.group(1));
